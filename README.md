@@ -21,7 +21,6 @@ Browsing the catalog reads the JSON file. It does not call PhysioNet or SerpAPI.
   - [Windows](#windows)
 - [Run](#run)
 - [API](#api)
-- [Another machine](#another-machine)
 
 ## How SerpAPI is used
 
@@ -83,9 +82,10 @@ Use `uv run` for every project command. You do not activate the virtual environm
    ```
 
 2. Open a new terminal if `uv` is not found. Check with `uv --version`.
-3. Go to this folder. If you cloned the repo, that folder is `Physiolens`.
+3. Clone the repository and install the dependencies.
 
    ```bash
+   git clone https://github.com/Bhavya9991/Physiolens.git
    cd Physiolens
    uv sync
    cp .env.sample .env
@@ -104,9 +104,10 @@ Use PowerShell for these steps.
    ```
 
 2. Close that window and open a new PowerShell window. Check with `uv --version`.
-3. Go to this folder. If you cloned the repo, that folder is `Physiolens`.
+3. Clone the repository and install the dependencies.
 
    ```powershell
+   git clone https://github.com/Bhavya9991/Physiolens.git
    cd Physiolens
    uv sync
    Copy-Item .env.sample .env
@@ -178,12 +179,3 @@ Agent routes:
 - `POST /api/runs/{id}/stop` finishes the current paper or step, then stops.
 - `DELETE /api/runs/{id}` deletes one run. `DELETE /api/runs` deletes every run.
 - `POST /api/scholar` with `{"query": "..."}` runs one Scholar search.
-
-## Another machine
-
-```bash
-git clone https://github.com/Bhavya9991/Physiolens.git
-cd Physiolens
-```
-
-Then install uv, run `uv sync`, and copy `.env.sample` to `.env` as above. `.env` is not in git. Copy the keys onto that machine by hand.
