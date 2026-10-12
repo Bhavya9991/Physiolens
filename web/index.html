@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PhysioLens</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,520;9..144,640&family=Outfit:wght@380;500;640&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/app.css?v=29" />
+</head>
+<body>
+  <div class="shell">
+    <aside class="rail" id="rail">
+      <div class="rail-head">
+        <button class="brand" id="brand" type="button">PhysioLens</button>
+        <p>A PhysioNet catalog, then two agents that read past the project page.</p>
+      </div>
+      <nav class="nav" aria-label="Sections">
+        <a href="#/about" data-section="about">About</a>
+        <a href="#/explore" data-section="explore">Explore</a>
+        <a href="#/activity" data-section="activity">Past activity</a>
+      </nav>
+    </aside>
+    <nav class="section-bar" aria-label="Sections">
+      <a href="#/about" data-section="about">About</a>
+      <a href="#/explore" data-section="explore">Explore</a>
+      <a href="#/activity" data-section="activity">Past activity</a>
+    </nav>
+    <main class="stage" id="stage">
+      <p class="stage-loading">Opening the catalog…</p>
+    </main>
+  </div>
+  <script src="/static/app.js?v=39"></script>
+</body>
+</html>
