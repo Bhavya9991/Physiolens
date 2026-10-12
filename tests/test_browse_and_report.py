@@ -93,8 +93,9 @@ class AgentRouteTests(unittest.TestCase):
 
 class ScholarQueryTests(unittest.TestCase):
     def test_no_results_message_is_an_empty_list(self):
-        with patch("apps.backend.scholar.httpx.get", return_value=_json_response({"error": "Google hasn't returned any results for this query."})):
+        with patch("apps.backend.scholar.httpx.get", return_value=_json_response({"error": "Google hasn't returned any results for this query."})) as request:
             self.assertEqual(search_scholar('"Visual Question Answering evaluation dataset for MIMIC CXR"', "test-key"), [])
+        self.assertIs(request.call_args.kwargs["params"]["no_cache"], True)
 
     def test_a_real_serp_error_still_fails(self):
         with patch("apps.backend.scholar.httpx.get", return_value=_json_response({"error": "Your account has run out of searches."})):

@@ -196,22 +196,9 @@ def compare(state: ResourceState) -> dict:
     project = state["project"]
     profile = state.get("profile") or _empty_profile()
     seed = seed_card(project, profile)
-    catalog_cards = [catalog_card(project, peer) for peer in state.get("peers") or []]
-    outside_cards = [
-        outside_card(project, profile, page)
-        for page in state.get("outside") or []
-        if page.get("relation") == "peer"
-    ]
+    catalog_cards = explain_similar(state, seed, [catalog_card(project, peer) for peer in state.get("peers") or []])
+    outside_cards = web_cards(project, state.get("outside") or [])
     family_cards = [family_card(item) for item in state.get("family") or []]
-    for card in catalog_cards:
-        card["bucket"] = "catalog"
-    for card in outside_cards:
-        card["bucket"] = "outside"
-    kept = explain_similar(state, seed, catalog_cards + outside_cards)
-    catalog_cards = [card for card in kept if card.get("bucket") == "catalog"]
-    outside_cards = [card for card in kept if card.get("bucket") == "outside"]
-    for card in kept:
-        card.pop("bucket", None)
     summary = (
         f"{_count(len(catalog_cards), 'similar resource')} in this catalog. "
         f"{_count(len(outside_cards), 'similar page')} outside PhysioNet."
@@ -220,10 +207,9 @@ def compare(state: ResourceState) -> dict:
         "kind": "resources",
         "retrieved_on": date.today().isoformat(),
         "method": (
-            "A resource is shown only when it shares a subject, a data form, a topic, a modality, a task, or a kind. "
-            f"Catalog matches stop at {CATALOG_CAP}. Outside pages are the first results of up to {QUERY_CAP} fixed web searches, "
-            f"capped at {WEB_CAP} after PhysioNet links and duplicates are removed. "
-            "The insight on each card is written from this project, the other resource, and that comparison. "
+            "A catalog resource is shown when it shares a subject, a data form, a topic, or a kind. "
+            f"Outside pages are the first results of up to {QUERY_CAP} web searches, capped at {WEB_CAP}. "
+            "A web result is kept from its title and snippet when it is a dataset in the same area, including when the page itself could not be opened. "
             "This is not a ranking of every resource."
         ),
         "summary": summary,
@@ -285,12 +271,16 @@ def keep_quoted(reading: dict, text: str, *, allow_hints: bool, title: str) -> d
 
 
 def build_queries(project: dict, profile: dict) -> list[str]:
-    """Specific queries first. The list stops at four."""
+    """The dataset name first, then the words that would find a peer dataset."""
     word = _KIND_WORD.get(project.get("resource_type") or "", "resource")
-    title = (project.get("title") or "resource").split(":")[0].strip()
-    queries = [f"{title} {word}"]
+    name = ((project.get("title") or "resource").split(":")[0]).strip()
+    queries = [f'"{name}" {word}']
+    words = _content_words(name)[:4]
+    if len(words) >= 2:
+        queries.append(f"{' '.join(words)} {word}")
     for hint in (profile.get("peer_hints") or [])[:2]:
-        queries.append(f"{hint} {word}")
+        if _useful_hint(hint):
+            queries.append(f'"{hint.strip()}" {word}')
     modality = " ".join(profile.get("modality") or [])
     task = " ".join((profile.get("tasks") or [])[:1])
     if modality and task:
@@ -305,6 +295,83 @@ def build_queries(project: dict, profile: dict) -> list[str]:
         if len(kept) == QUERY_CAP:
             break
     return kept
+
+
+def web_cards(project: dict, pages: list[dict]) -> list[dict]:
+    """Keep a search hit from its title and snippet. A blocked page still counts."""
+    cards = []
+    for page in pages:
+        if not _web_keep(project, page):
+            continue
+        cards.append(_web_card(project, page))
+        if len(cards) == WEB_CAP:
+            break
+    return cards
+
+
+def _web_keep(project: dict, page: dict) -> bool:
+    title = page.get("title") or ""
+    blob = f"{title} {page.get('snippet') or ''}"
+    if _JUNK.search(blob) and not _RESOURCE_WORD.search(title):
+        return False
+    shared = set(_content_words(project.get("title") or "")) & set(_tokens(blob))
+    if not shared:
+        return False
+    return bool(_RESOURCE_WORD.search(blob)) or any(len(word) >= 8 for word in shared)
+
+
+def _web_card(project: dict, page: dict) -> dict:
+    title = (page.get("title") or "Untitled").replace("...", "").strip()
+    about = _first_sentence(page.get("snippet") or "")
+    shared = sorted(set(_content_words(project.get("title") or "")) & set(_tokens(f"{title} {page.get('snippet') or ''}")))
+    mention = f" It mentions {_join(shared[:3])}." if shared else ""
+    why = f"{_short_name(title)}.{mention}"
+    if about:
+        why = f"{_short_name(title)}. {about}{mention}"
+    opened = page.get("relation") != "unread"
+    if not opened:
+        why = f"{why} The page itself could not be opened, so this is the search result."
+    return {
+        "title": page.get("title") or "Untitled",
+        "link": page.get("link") or "",
+        "kind": "",
+        "access": "",
+        "relation": "web",
+        "about": about,
+        "dimensions": [],
+        "why": " ".join(why.split()),
+    }
+
+
+_STOP = {
+    "about", "after", "also", "and", "are", "based", "been", "clinical", "data", "database",
+    "dataset", "from", "have", "health", "into", "large", "medical", "multi", "open", "over",
+    "patient", "public", "records", "scale", "study", "that", "the", "this", "using", "with",
+}
+_HOST_HINTS = {"figshare", "kaggle", "github", "zenodo", "physionet", "arxiv", "pubmed"}
+_RESOURCE_WORD = re.compile(r"\b(dataset|database|corpus|collection|benchmark|repository)\b", re.I)
+_JUNK = re.compile(r"how to |usage metrics|revision history|cite or embed|sign in|cookie policy|download data", re.I)
+
+
+def _tokens(text: str) -> list[str]:
+    return re.findall(r"[a-z0-9][a-z0-9-]{2,}", (text or "").casefold())
+
+
+def _content_words(title: str) -> list[str]:
+    words = []
+    for token in _tokens(title):
+        if token in _STOP or token in words:
+            continue
+        if len(token) >= 5 or any(character.isdigit() for character in token):
+            words.append(token)
+    return words
+
+
+def _useful_hint(hint: str) -> bool:
+    text = " ".join((hint or "").split())
+    if len(text) < 4 or text.casefold() in _HOST_HINTS:
+        return False
+    return True
 
 
 def family_projects(html: str, seed_slug: str) -> list[dict]:

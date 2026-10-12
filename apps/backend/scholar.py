@@ -18,8 +18,8 @@ _NO_RESULTS = "hasn't returned any results"
 
 
 def search_scholar(query: str, api_key: str, num: int = 5) -> list[dict]:
-    """Scholar search by keywords."""
-    return _search(api_key, engine="google_scholar", q=query, num=num)
+    """Scholar search by keywords. A cached empty result must not hide the record."""
+    return _search(api_key, engine="google_scholar", q=query, num=num, no_cache=True)
 
 
 def search_citing(cites_id: str, api_key: str, query: str = "", num: int = 5, start: int = 0) -> list[dict]:
@@ -27,7 +27,7 @@ def search_citing(cites_id: str, api_key: str, query: str = "", num: int = 5, st
 
     start is the next page. Each page is its own SerpApi search.
     """
-    params = {"engine": "google_scholar", "cites": cites_id, "num": num}
+    params = {"engine": "google_scholar", "cites": cites_id, "num": num, "no_cache": True}
     if start:
         params["start"] = start
     if query.strip():

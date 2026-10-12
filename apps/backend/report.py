@@ -127,7 +127,9 @@ def _similar_cards(cards: list) -> list:
     """A card is shown when at least one compared field matches."""
     kept = []
     for card in cards or []:
-        if any((item or {}).get("verdict") == "same" for item in (card.get("dimensions") or [])):
+        if card.get("relation") == "web" or any(
+            (item or {}).get("verdict") == "same" for item in (card.get("dimensions") or [])
+        ):
             kept.append(card)
     return kept
 
@@ -214,7 +216,7 @@ def _resource_card(card: dict) -> str:
     kind = f"<span class='badge'>{_esc(card.get('kind') or '')}</span>" if card.get("kind") else ""
     access = f"<p class='meta'>{_esc(card.get('access') or '')}</p>" if card.get("access") else ""
     why_text = card.get("why") or ""
-    if card.get("relation") == "peer" and why_text:
+    if card.get("relation") in {"peer", "web"} and why_text:
         why = f"<p class='why'><span>Insight</span> {_esc(why_text)}</p>"
     elif why_text:
         why = f"<p class='why'>{_esc(why_text)}</p>"

@@ -1107,13 +1107,13 @@ function resourceSection(heading, cards, empty) {
 }
 
 function similarCards(cards) {
-  return (cards || []).filter((card) => (card.dimensions || []).some((item) => item.verdict === "same"));
+  return (cards || []).filter((card) => card.relation === "web" || (card.dimensions || []).some((item) => item.verdict === "same"));
 }
 
 function resourceCard(card) {
   const kind = card.kind ? `<span class="badge">${esc(card.kind)}</span>` : "";
   const access = card.access ? `<p class="note">${esc(card.access)}</p>` : "";
-  const why = card.relation === "peer" && card.why
+  const why = (card.relation === "peer" || card.relation === "web") && card.why
     ? `<p class="why"><span>Insight</span> ${esc(card.why)}</p>`
     : (card.why ? `<p class="why">${esc(card.why)}</p>` : "");
   const title = card.link

@@ -12,6 +12,7 @@ from apps.agents.resources import (
     keep_quoted,
     plain_insight,
     rank_catalog,
+    web_cards,
     why_line,
 )
 from apps.backend.catalog_view import actions_for
@@ -40,10 +41,45 @@ class QuoteTests(unittest.TestCase):
             {"title": "MIMIC-CXR: chest radiographs", "resource_type": "Database"},
             {"peer_hints": ["PadChest", "VinDr-CXR", "NIH ChestX-ray14"], "modality": ["chest radiograph"], "tasks": ["classification"]},
         )
-        self.assertEqual(len(queries), 4)
-        self.assertTrue(queries[0].startswith("MIMIC-CXR"))
-        self.assertIn("PadChest", queries[1])
+        self.assertLessEqual(len(queries), 4)
+        self.assertIn("MIMIC-CXR", queries[0])
+        self.assertIn("PadChest", " ".join(queries))
         self.assertNotIn("NIH", " ".join(queries))
+        bare = " ".join(build_queries({"title": "ECG", "resource_type": "Database"}, {"peer_hints": ["figshare"]}))
+        self.assertNotIn("figshare", bare)
+
+
+class WebHitTests(unittest.TestCase):
+    def test_a_blocked_page_stays_when_the_search_result_is_a_dataset(self):
+        project = {"title": "A large scale 12-lead electrocardiogram database for arrhythmia study"}
+        cards = web_cards(
+            project,
+            [
+                {
+                    "title": "A 12-lead electrocardiogram database for arrhythmia research",
+                    "link": "https://www.scilit.com/publications/example",
+                    "snippet": "This database contains 12-lead ECGs.",
+                    "relation": "unread",
+                },
+                {
+                    "title": "ecg_data",
+                    "link": "https://www.kaggle.com/datasets/example",
+                    "snippet": "ECG heartbeat dataset for arrhythmia classification.",
+                    "relation": "unread",
+                },
+                {
+                    "title": "How to Share, Cite or Embed your items",
+                    "link": "https://info.figshare.com/user-guide/how-to-share",
+                    "snippet": "Learn how to share your items.",
+                    "relation": "peer",
+                },
+            ],
+        )
+        titles = [card["title"] for card in cards]
+        self.assertEqual(len(cards), 2)
+        self.assertNotIn("How to Share, Cite or Embed your items", titles)
+        self.assertIn("search result", cards[0]["why"])
+        self.assertEqual(cards[0]["relation"], "web")
 
 
 class CatalogTests(unittest.TestCase):
@@ -97,6 +133,7 @@ class ReportTests(unittest.TestCase):
                         ],
                         "outside": [
                             {"title": "Unread", "link": "https://example.org/unread", "kind": "", "access": "", "relation": "unread", "dimensions": [], "why": "The page could not be read."},
+                            {"title": "Chest dataset", "link": "https://example.org/chest", "kind": "", "access": "", "relation": "web", "dimensions": [], "why": "A chest radiograph dataset."},
                         ],
                         "family": [],
                     }
@@ -108,6 +145,8 @@ class ReportTests(unittest.TestCase):
         self.assertIn("Different kind", html)
         self.assertIn("Insight", html)
         self.assertNotIn("The page could not be read.", html)
+        self.assertIn("Chest dataset", html)
+        self.assertIn("A chest radiograph dataset.", html)
         self.assertIn("not a ranking", html)
         self.assertNotIn("Evidence rows", html)
         self.assertIn("class='usage-card'", html)
