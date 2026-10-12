@@ -283,7 +283,7 @@ function paintLevel(parts) {
     <div class="tiles">
       ${nodes.map((node) => tile({
         theme: node.id,
-        kicker: node.has_children ? "Has a narrower group" : "Group",
+        kicker: "",
         title: node.label,
         count: `${node.count} projects`,
         subtitle: node.blurb || node.label,
@@ -305,7 +305,7 @@ function tile({ theme, kicker, title, count, subtitle, href }) {
   return `
     <button class="tile" data-theme="${esc(theme)}" data-href="${esc(href)}" type="button">
       <span class="mark" aria-hidden="true">${MARKS[theme] || MARKS.subject}</span>
-      <span class="tile-kicker">${esc(kicker)}</span>
+      ${kicker ? `<span class="tile-kicker">${esc(kicker)}</span>` : ""}
       <span class="tile-title">${esc(title)}</span>
       <span class="tile-count">${esc(count)}</span>
       <span class="tile-sub">${esc(subtitle)}</span>

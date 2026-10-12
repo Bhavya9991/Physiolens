@@ -272,7 +272,8 @@ button.download.stop:disabled, .download.is-waiting { color: var(--muted); curso
 }
 .tile .mark svg { width: 100%; height: 100%; }
 .tile-kicker { font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--wash, var(--muted)); }
-.tile-title { font-family: Fraunces, Georgia, serif; font-size: 1.55rem; margin-top: 0.35rem; position: relative; }
+.tile-title { font-family: Fraunces, Georgia, serif; font-size: 1.55rem; margin-top: 0; position: relative; }
+.tile-kicker + .tile-title { margin-top: 0.35rem; }
 .tile-count { margin-top: auto; position: relative; color: var(--muted); }
 .tile-sub {
   position: relative;
